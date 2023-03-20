@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Media } from 'src/entities/media.entity';
 import { StatusMessage } from 'src/util/global.enum';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { PageOptionsDto } from './dto/pageoption.dto';
 import { SearchQueryDto } from './dto/search.dto';
 import { UpdateUploadDto } from './dto/update-upload.dto';
@@ -23,13 +23,50 @@ export class MediaService {
     return { filter };
   }
 
-  async findById(id: string) {}
+  findById = async (id: string) => {
+    const file = await this.mediaRepository.findOneBy({ id });
+    return {
+      status: 'success',
+      message: StatusMessage.SUCCESS,
+      data: file,
+    };
+  };
 
-  async search(id: SearchQueryDto) {}
+  async search(
+    repository: Repository<T>,
+    searchFields,
+    search: SearchQueryDto,
+  ) {
+    const queryBuilder = repository.createQueryBuilder('alias');
+    const whereSearch: FindOptionsWhere<T> = {};
+    searchFields.forEach(
+      (field) => (whereSearch[`${field}` as string] = ILike(`%${search}%`)),
+    );
+    queryBuilder.andWhere(whereSearch);
+    const [items, totalCount] = await queryBuilder.getManyAndCount();
+    return {
+      status: 'success',
+      message: StatusMessage.SUCCESS,
+      data: { items, totalCount },
+    };
+  }
 
-  public async update(id: string, fields: UpdateUploadDto) {
+  async update(id: string, fields: UpdateUploadDto): Promise<any> {
     try {
-      //   return this.userRepository.update(id, fields);
+      const response = await this.mediaRepository
+        .createQueryBuilder()
+        .update({
+          status: fields.status,
+        })
+        .where({
+          id: id,
+        })
+        .execute();
+      return {
+        status: 'success',
+        message: StatusMessage.SUCCESS,
+        data: response,
+      };
     } catch (error) {
       console.log(error);
       return {
@@ -40,14 +77,14 @@ export class MediaService {
     }
   }
 
-  softDelete = (mediaId: string) => {
+  softDelete = (id: string) => {
     try {
-      return 'softDelete';
-      // return Media.query().patchAndFetchById(mediaId, {
-      //   deleted_at: new Date(),
-      // });
+      return {
+        status: 'success',
+        message: StatusMessage.SUCCESS,
+        data: this.mediaRepository.update(id, { deleted_at: new Date() }),
+      };
     } catch (error) {
-      console.log(error);
       return {
         status: 'error',
         message: StatusMessage.FAILED,
@@ -56,13 +93,13 @@ export class MediaService {
     }
   };
 
-  async upload(file, payload: UploadDto) {
+  async upload(file, payload: UploadDto): Promise<any> {
     console.log('file', file);
     try {
       const response = await this.mediaRepository.save({
         file_name: file.originalname,
         file_type: file.mimetype,
-        url: 'google.com',
+        url: `${process.env.app_url}/files/${file.originalname}`,
         description: payload.description,
       });
 

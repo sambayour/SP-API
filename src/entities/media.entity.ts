@@ -11,7 +11,7 @@ import {
 @Entity('medias')
 export class Media {
   @PrimaryGeneratedColumn('uuid')
-  id: number;
+  id: string;
 
   @Column()
   file_name: string;
@@ -40,5 +40,5 @@ export class Media {
   updated_at: string;
 
   @DeleteDateColumn()
-  deleted_at: string;
+  deleted_at: Date;
 }

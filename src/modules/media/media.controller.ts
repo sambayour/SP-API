@@ -45,18 +45,14 @@ export class MediaController {
     return await this.mediaService.findById(id);
   }
 
-  @Get('search/:query')
-  async findByFilter(@Query() query) {
-    return await this.mediaService.search(query);
-  }
-
-  //   @Get('/media/search?')
-  //   async find(@Query('query') query: number);
-
-  @Get('search?')
+  @Get('search')
   @UsePipes(new ValidationPipe({ transform: true }))
   async search(@Query() query: SearchQueryDto) {
-    return await this.mediaService.search(query);
+    return await this.mediaService.search(
+      query,
+      ['name', 'description'],
+      query,
+    );
   }
 
   @Patch(':id')
@@ -77,10 +73,13 @@ export class MediaController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 500000 }),
+          new MaxFileSizeValidator({ maxSize: 5000000 }),
           new FileTypeValidator({
             // eslint-disable-next-line prettier/prettier
-            fileType: new RegExp(/^\w+.(jpg|png|jpeg|mp4|3gp|mp3|wav)$/, 'igm'),
+            fileType: new RegExp(
+              /^\w+.(jpg|png|jpeg|mp4|3gp|mp3|wav|flac)$/,
+              'igm',
+            ),
           }),
         ],
       }),
